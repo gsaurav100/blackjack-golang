@@ -7,7 +7,7 @@ This is a program created in Golang to play blackjack against a bot. The game is
 The aim of the game is to get the sum of the cards as close to 21 as possible. For further information read [Rules of the Game](#rules-of-the-game)
 
 To run the program, execute the following command in the root folder:
-> go run main.go
+> `go run main.go`
 
 ## Rules of the Game
 
@@ -33,5 +33,5 @@ Use the following guide to install golang. Choose your appropriate Opertating Sy
 https://go.dev/doc/install
 
 Ensure you have golang installed by running
-> go version
+> `go version`
 
