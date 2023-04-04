@@ -8,6 +8,7 @@ import (
 )
 
 const WINNING_TARGET = 21
+const INITIAL_CHIPS = 100
 
 // recursively get all possible scores (multiple scores with Ace)
 func doScoreRecursion(hand []deck.Card, currScore int, allScores *[]int) {
@@ -128,106 +129,158 @@ func printHand(d []deck.Card) {
 	fmt.Println()
 }
 
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 func main() {
+	var userInput string                    // holds any user input (hit, stay, continue, exit)
+	var userBet int                         // what the user would like to bet for that round (matched by the dealer)
+	var playerChipCount int = INITIAL_CHIPS // players remaining chips
+	var dealerChipCount int = INITIAL_CHIPS // dealers remaining chips
 
-	d := deck.New(deck.ShuffleDeck)
-
-	var playerCards []deck.Card
-	var dealerCards []deck.Card
-
-	// deal 2 cards to the player and the dealer
-	deal(&d, &playerCards)
-	deal(&d, &dealerCards)
-	deal(&d, &playerCards)
-	deal(&d, &dealerCards)
-
-	// show user the one of the dealers cards
-	fmt.Println("DEALERS CARDS")
-	fmt.Println(dealerCards[0], "[HIDDEN]")
-	fmt.Println("-------------------")
-	fmt.Println("YOUR CARDS")
-	printHand(playerCards)
-	fmt.Print("Your score(s): ")
-	printValidScores(playerCards)
-
-	var userInput string
 	for {
-		// Ask user to hit or stay
-		fmt.Println()
-		fmt.Print("HIT (H) or STAY (S): ")
-		fmt.Scanln(&userInput)
-		fmt.Println()
-		if strings.ToUpper(userInput) == "H" {
-			// deal the user another card
-			deal(&d, &playerCards)
+		if playerChipCount == 0 {
+			fmt.Println("**********GAME OVER************")
+			fmt.Println("***********YOU LOST************")
+			fmt.Println("*****BETTER LUCK NEXT TIME*****")
+			break
+		}
 
-			// if user is busted end the game
-			if isUserBust(playerCards) {
-				fmt.Println("*******YOU WENT BUST*******")
-				fmt.Println("YOUR CARDS")
-				printHand(playerCards)
-				fmt.Println("Your score(s): ", getScore(playerCards)) // show all scores
-				fmt.Println()
-				fmt.Println("*******************************")
-				fmt.Println("***********YOU LOST************")
-				fmt.Println("*******************************")
-				break
-			}
+		if dealerChipCount == 0 {
+			fmt.Println("***********GAME OVER***********")
+			fmt.Println("************YOU WON************")
+			fmt.Println("***********GOOD WORK***********")
+			break
+		}
 
-			fmt.Println("DEALERS CARDS")
-			fmt.Println(dealerCards[0], "[HIDDEN]")
-			fmt.Println("-------------------")
-			fmt.Println("YOUR CARDS")
-			printHand(playerCards)
-			fmt.Print("Your score(s): ")
-			printValidScores(playerCards) // only show scores less than WINNING_TARGET
-		} else if strings.ToUpper(userInput) == "S" {
-			// dealer makes decisions
-			playDealer(&d, &dealerCards)
+		// what the user would like to bet for that round
+		fmt.Print("Place your bet: ")
+		fmt.Scanf("%d", &userBet)
 
-			// check if dealer bust - player wins instantly
-			if isUserBust(dealerCards) {
-				fmt.Println("*******DEALER WENT BUST*******")
+		// if user places a bet greater than either parties remaining chips
+		if userBet > playerChipCount || userBet > dealerChipCount {
+			userBet = min(playerChipCount, dealerChipCount)
+		}
+
+		// reduce remaining chips by user bet
+		playerChipCount = playerChipCount - userBet
+		dealerChipCount = dealerChipCount - userBet
+
+		// TODO: Print remaining chips
+
+		if playerChipCount == 0 {
+			fmt.Println("PLAYER HAS GONE ALL IN!!")
+		} else if dealerChipCount == 0 {
+			fmt.Println(("DEALER HAS GONE ALL IN!!"))
+		}
+
+		// new shuffled deck
+		d := deck.New(deck.ShuffleDeck)
+
+		var playerCards []deck.Card
+		var dealerCards []deck.Card
+
+		// deal 2 cards to the player and the dealer
+		deal(&d, &playerCards)
+		deal(&d, &dealerCards)
+		deal(&d, &playerCards)
+		deal(&d, &dealerCards)
+
+		// show user the one of the dealers cards
+		fmt.Println("DEALERS CARDS")
+		fmt.Println(dealerCards[0], "[HIDDEN]")
+		fmt.Println("-------------------")
+		fmt.Println("YOUR CARDS")
+		printHand(playerCards)
+		fmt.Print("Your score(s): ")
+		printValidScores(playerCards)
+
+		for {
+			// Ask user to hit or stay
+			fmt.Println()
+			fmt.Print("HIT (H) or STAY (S): ")
+			fmt.Scanln(&userInput)
+			fmt.Println()
+			if strings.ToUpper(userInput) == "H" {
+				// deal the user another card
+				deal(&d, &playerCards)
+
+				// if user is busted end the game
+				if isUserBust(playerCards) {
+					fmt.Println("*******YOU WENT BUST*******")
+					fmt.Println("YOUR CARDS")
+					printHand(playerCards)
+					fmt.Println("Your score(s): ", getScore(playerCards)) // show all scores
+					fmt.Println()
+					fmt.Println("***********YOU LOST************")
+
+					// TODO: Print remaining chips
+					dealerChipCount = dealerChipCount + 2*userBet
+					break
+				}
+
 				fmt.Println("DEALERS CARDS")
-				printHand(dealerCards)
-				fmt.Println("Dealer score(s): ", getScore(dealerCards))
+				fmt.Println(dealerCards[0], "[HIDDEN]")
 				fmt.Println("-------------------")
 				fmt.Println("YOUR CARDS")
 				printHand(playerCards)
-				fmt.Println("Your score: ", getHighestValidScore(playerCards)) // show all scores
-				fmt.Println()
-				fmt.Println("*******************************")
-				fmt.Println("************YOU WON************")
-				fmt.Println("*******************************")
+				fmt.Print("Your score(s): ")
+				printValidScores(playerCards) // only show scores less than WINNING_TARGET
+			} else if strings.ToUpper(userInput) == "S" {
+				// dealer makes decisions
+				playDealer(&d, &dealerCards)
+
+				// check if dealer bust - player wins instantly
+				if isUserBust(dealerCards) {
+					fmt.Println("*******DEALER WENT BUST*******")
+					fmt.Println("DEALERS CARDS")
+					printHand(dealerCards)
+					fmt.Println("Dealer score(s): ", getScore(dealerCards))
+					fmt.Println("-------------------")
+					fmt.Println("YOUR CARDS")
+					printHand(playerCards)
+					fmt.Println("Your score: ", getHighestValidScore(playerCards)) // show all scores
+					fmt.Println()
+					fmt.Println("************YOU WON************")
+					// TODO: Print remaining chips
+					break
+				}
+
+				// show all the dealers cards
+				dealerScore := getHighestValidScore(dealerCards)
+				playerScore := getHighestValidScore(playerCards)
+				fmt.Println("DEALERS CARDS")
+				printHand(dealerCards)
+				fmt.Println("Dealer score: ", dealerScore)
+				fmt.Println("-------------------")
+				fmt.Println("YOUR CARDS")
+				printHand(playerCards)
+				fmt.Println("Your score: ", playerScore)
+				if playerScore > dealerScore {
+					fmt.Println()
+					fmt.Println("************YOU WON************")
+					// TODO: Print remaining chips
+				} else {
+					fmt.Println()
+					fmt.Println("***********YOU LOST************")
+					// TODO: Print remaining chips
+				}
+
+				// end the game
 				break
-			}
-
-			// show all the dealers cards
-			dealerScore := getHighestValidScore(dealerCards)
-			playerScore := getHighestValidScore(playerCards)
-			fmt.Println("DEALERS CARDS")
-			printHand(dealerCards)
-			fmt.Println("Dealer score: ", dealerScore)
-			fmt.Println("-------------------")
-			fmt.Println("YOUR CARDS")
-			printHand(playerCards)
-			fmt.Println("Your score: ", playerScore)
-			if playerScore > dealerScore {
-				fmt.Println()
-				fmt.Println("*******************************")
-				fmt.Println("************YOU WON************")
-				fmt.Println("*******************************")
 			} else {
-				fmt.Println()
-				fmt.Println("*******************************")
-				fmt.Println("***********YOU LOST************")
-				fmt.Println("*******************************")
+				fmt.Println("Invalid input.")
 			}
+		}
 
-			// end the game
+		fmt.Print("Keep playing? (Y/N)")
+		fmt.Scanln(&userInput)
+		if strings.ToUpper(userInput) == "N" {
 			break
-		} else {
-			fmt.Println("Invalid input.")
 		}
 	}
 }
